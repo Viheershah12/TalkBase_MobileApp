@@ -1,28 +1,34 @@
 class ChatMessage {
   final String id;
-  final String chatRoomId;
   final String senderId;
-  final String? message;
-  final DateTime sentAt;
-  final bool isEdited;
+  final String senderName;
+  final String message;
+  final DateTime timestamp;
 
   ChatMessage({
     required this.id,
-    required this.chatRoomId,
     required this.senderId,
+    required this.senderName,
     required this.message,
-    required this.sentAt,
-    required this.isEdited,
+    required this.timestamp,
   });
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+  factory ChatMessage.fromMap(Map<String, dynamic> map, String docId) {
     return ChatMessage(
-      id: json['id'],
-      chatRoomId: json['chatRoomId'],
-      senderId: json['senderId'],
-      message: json['message'],
-      sentAt: DateTime.parse(json['sentAt']),
-      isEdited: json['isEdited'],
+      id: docId,
+      senderId: map['senderId'] ?? '',
+      senderName: map['senderName'] ?? '',
+      message: map['message'] ?? '',
+      timestamp: map['timestamp']?.toDate() ?? DateTime.now(),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'senderId': senderId,
+      'senderName': senderName,
+      'message': message,
+      'timestamp': timestamp,
+    };
   }
 }

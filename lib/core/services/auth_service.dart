@@ -1,68 +1,94 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-import '../constants.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 
 class AuthService {
-  static const String tokenEndpoint = AuthenticationConstants.authServerBaseUrl;
-  static const String clientId = AuthenticationConstants.clientId;
-  static const String clientSecret = AuthenticationConstants.clientSecret;
-  static const String scope = AuthenticationConstants.scope;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<Map<String, dynamic>?> login({
-    required String username,
-    required String password,
-    required String tenant
-  }) async {
+  Future<User?> signInWithEmail(String email, String password) async {
     try {
-      var url = Uri.parse(tokenEndpoint);
-      print('Requesting token at: $url');
-      final response = await http.post(
-        Uri.parse(tokenEndpoint),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          '__tenant': tenant,
-        },
-        body: {
-          'grant_type': 'password',
-          'username': username,
-          'password': password,
-          'client_id': clientId,
-          'client_secret': clientSecret,
-          'scope': scope,
-        },
+      var cred = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return cred.user;
+    } catch (e) {
+      debugPrint(e.toString());
+      return null;
+    }
+  }
+
+  // Future<User?> registerWithEmail(String email, String password) async {
+  //   try {
+  //     UserCredential cred = await _auth.createUserWithEmailAndPassword(
+  //       email: email,
+  //       password: password,
+  //     );
+  //     return cred.user;
+  //   } catch (e) {
+  //     print(e);
+  //     return null;
+  //   }
+  // }
+
+  Future<User?> registerWithEmail(String email, String password, String firstName, String lastName) async {
+    try {
+      // 1. Create the user
+      UserCredential cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final accessToken = data["access_token"];
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else {
-        print('Login failed: ${response.statusCode} ${response.body}');
-        return null;
+      User? user = cred.user;
+
+      // 2. Update the displayName
+      if (user != null) {
+        // Combine first and last name for the display name
+        String displayName = '$firstName $lastName';
+        await user.updateDisplayName(displayName);
+
+        // Optional: reload the user to get the updated info
+        await user.reload();
+        user = _auth.currentUser;
       }
+
+      return user;
+    } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase errors
+      print('Firebase Auth Exception: ${e.message}');
+      return null;
     } catch (e) {
-      print('Login exception: $e');
+      print('An unexpected error occurred: $e');
       return null;
     }
   }
 
-  Future<Map<String, dynamic>?> checkTenant({
-    required String tenant
-  }) async {
-    try{
-      var url = Uri.parse(AppConstants.tenantCheck + tenant);
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body) as Map<String, dynamic>;
-      } else {
-        return null;
-      }
-    }
-    catch (e){
-      print('Login exception: $e');
-      return null;
-    }
+  Future<void> signOut() async {
+    await _auth.signOut();
   }
+
+  Future<void> sendOtp(String phoneNumber, Function(String, int?) codeSent) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await _auth.signInWithCredential(credential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        print("Verification failed: $e");
+      },
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    );
+  }
+
+  Future<User?> verifyOtp(String verificationId, String smsCode) async {
+    PhoneAuthCredential credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
+    UserCredential cred = await _auth.signInWithCredential(credential);
+    return cred.user;
+  }
+
+  User? get currentUser => _auth.currentUser;
 }

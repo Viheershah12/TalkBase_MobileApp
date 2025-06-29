@@ -1,29 +1,46 @@
-import 'chat_participant.dart';
-import 'chat_message.dart';
-
 class ChatRoom {
   final String id;
   final String name;
-  final bool isGroup;
-  final bool isClosed;
-  DateTime? closedOn;
-  final bool isPublic;
+  final String createdBy;
+  final DateTime? createdOn;
+  final DateTime? updatedOn;
+  final String updatedBy;
+  final List<String> participants;
+  final Map<String, int> unreadCounts;
 
   ChatRoom({
     required this.id,
     required this.name,
-    required this.isPublic,
-    required this.isGroup,
-    required this.isClosed
+    required this.createdBy,
+    required this.createdOn,
+    required this.updatedBy,
+    required this.updatedOn,
+    required this.participants,
+    this.unreadCounts = const {},
   });
 
-  factory ChatRoom.fromJson(Map<String, dynamic> json) {
+  factory ChatRoom.fromMap(Map<String, dynamic> map) {
     return ChatRoom(
-      id: json['id'],
-      name: json['name'],
-      isPublic: json['isPublic'],
-      isGroup: json['isGroup'],
-      isClosed: json['isClosed']
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      createdBy: map['createdBy'] ?? '',
+      createdOn: map['createdOn']?.toDate(),
+      updatedBy: map['updatedBy'] ?? '',
+      updatedOn: map['updatedOn']?.toDate(),
+      participants: List<String>.from(map['participants'] ?? []),
+      unreadCounts: Map<String, int>.from(map['unreadCounts'] ?? {}),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'createdBy': createdBy,
+      'createdOn': createdOn,
+      'updatedBy': updatedBy,
+      'updatedOn': updatedOn,
+      'participants': participants,
+    };
   }
 }

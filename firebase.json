@@ -1,0 +1,40 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "talkbase-d0b3c",
+          "appId": "1:740699909798:android:2b0003b0eead0ee3690e67",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "talkbase-d0b3c",
+          "configurations": {
+            "android": "1:740699909798:android:2b0003b0eead0ee3690e67",
+            "ios": "1:740699909798:ios:8eb66642117abb58690e67",
+            "web": "1:740699909798:web:cbf8a3c9e4d02bfd690e67"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}

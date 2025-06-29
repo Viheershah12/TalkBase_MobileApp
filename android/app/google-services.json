@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "740699909798",
+    "project_id": "talkbase-d0b3c",
+    "storage_bucket": "talkbase-d0b3c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:740699909798:android:2b0003b0eead0ee3690e67",
+        "android_client_info": {
+          "package_name": "com.viheer.talkbase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAzlKUf0e6F8pApsPD-wjD7XqwuGK8Kps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

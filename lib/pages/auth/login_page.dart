@@ -1,10 +1,8 @@
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../core/services/chat_service.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/chat_provider.dart';
-import '../../widgets/tenant_selector.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart' show Fluttertoast, ToastGravity, Toast;
+import '../../core/services/auth_service.dart';
+import '../../core/services/notification_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +16,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController tenantController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final FlutterSecureStorage storage = FlutterSecureStorage();
   bool loading = false;
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -29,39 +29,45 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    final tenant = tenantController.text.trim();
-    final username = usernameController.text.trim();
-    final password = passwordController.text;
+    final username = usernameController.text.trim(); // use as email
+    final password = passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      Flushbar(
-        message: "Login failed",
-        duration: const Duration(seconds: 5),
-        backgroundColor: Colors.redAccent,
-      ).show(context);
-
+      Fluttertoast.showToast(
+        msg: "Email or password is missing.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
       return;
     }
 
     setState(() => loading = true);
 
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final success = await auth.login(username, password, tenant);
+    final user = await AuthService().signInWithEmail(username, password);
 
     setState(() => loading = false);
 
-    if (success && mounted) {
-      // ✅ Now it's safe to access token and tenant
-      final chatService = ChatService(auth.token!, auth.tenant!);
-      Provider.of<ChatProvider>(context, listen: false).initialize(chatService);
+    if (user != null) {
+      final token = await user.getIdToken();
+      final expiry = DateTime.now().add(Duration(hours: 6));
 
-      Navigator.pushReplacementNamed(context, '/chat');
+      await storage.write(key: 'token', value: token);
+      await storage.write(key: 'expiry', value: expiry.toIso8601String());
+
+      await NotificationService().initNotifications();
+      Navigator.pushReplacementNamed(context, '/home');
     } else {
-      Flushbar(
-        message: "Login failed",
-        duration: const Duration(seconds: 5),
-        backgroundColor: Colors.redAccent,
-      ).show(context);
+      Fluttertoast.showToast(
+        msg: "Login failed. Check your credentials.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 
@@ -75,14 +81,6 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              TenantSelector(
-                initialTenant: selectedTenant,
-                onTenantSelected: (tenant) {
-                  setState(() {
-                    selectedTenant = tenant;
-                  });
-                },
-              ),
               _header(context),
               _inputField(context),
               _forgotPassword(context),
@@ -106,25 +104,25 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  _inputField(context) {
+  _inputField(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         TextField(
+          controller: usernameController,
           decoration: InputDecoration(
               hintText: "Username",
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(18),
-                  borderSide: BorderSide.none
-              ),
+                  borderSide: BorderSide.none),
               fillColor: Colors.purple.withOpacity(0.1),
               filled: true,
-              prefixIcon: const Icon(Icons.person)
-          ),
-
+              prefixIcon: const Icon(Icons.person)),
         ),
         const SizedBox(height: 10),
         TextField(
+          controller: passwordController,
           decoration: InputDecoration(
             hintText: "Password",
             border: OutlineInputBorder(
@@ -133,22 +131,36 @@ class _LoginPageState extends State<LoginPage> {
             fillColor: Colors.purple.withOpacity(0.1),
             filled: true,
             prefixIcon: const Icon(Icons.password),
+            // 2. Add the suffixIcon for the toggle
+            suffixIcon: IconButton(
+              icon: Icon(
+                // 3. Change icon based on the state
+                _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                color: Colors.purple,
+              ),
+              onPressed: () {
+                // 4. Update the state to toggle visibility
+                setState(() {
+                  _isPasswordVisible = !_isPasswordVisible;
+                });
+              },
+            ),
           ),
-          obscureText: true,
+          // 5. Control the text visibility with the state variable
+          obscureText: !_isPasswordVisible,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         ElevatedButton(
           onPressed: loading ? null : _login,
           style: ElevatedButton.styleFrom(
-            shape: const StadiumBorder(),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            backgroundColor: Colors.purple
-          ),
+              shape: const StadiumBorder(),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              backgroundColor: Colors.purple),
           child: const Text(
             "Login",
             style: TextStyle(
                 fontSize: 20,
-                color: Color(0xFFFFFFFF)
+                color: Colors.white
             ),
           ),
         )
@@ -171,9 +183,10 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         const Text("Dont have an account? "),
         TextButton(
-            onPressed: () {
-            },
-            child: const Text("Sign Up", style: TextStyle(color: Colors.purple),)
+          onPressed: () {
+            Navigator.pushNamed(context, '/signup');
+          },
+          child: const Text("Sign Up", style: TextStyle(color: Colors.purple)),
         )
       ],
     );
