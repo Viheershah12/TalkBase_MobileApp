@@ -24,6 +24,7 @@ class ChatRoomTile extends StatelessWidget {
     final theme = Theme.of(context);
     final accentColor = theme.primaryColor;
     final mutedColor = Colors.grey[600];
+    final bool hasValidPhotoUrl = chatRoom.groupIconUrl != null && chatRoom.groupIconUrl!.isNotEmpty;
 
     return Card(
       elevation: hasUnread ? 4 : 2,
@@ -32,8 +33,19 @@ class ChatRoomTile extends StatelessWidget {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          radius: 28,
-          backgroundColor: accentColor.withOpacity(0.1),
+          radius: 20,
+          backgroundColor: theme.primaryColor.withOpacity(0.1),
+          backgroundImage: hasValidPhotoUrl
+              ? NetworkImage(chatRoom.groupIconUrl!)
+              : null,
+          child: !hasValidPhotoUrl
+              ?
+          Icon(
+            Icons.group, // You can use Icons.people here as well
+            size: 22,
+            color: theme.primaryColor, // Give the icon a color
+          )
+          : null, // If there IS an image, the child should be null
         ),
         title: Text(
           chatRoom.name,

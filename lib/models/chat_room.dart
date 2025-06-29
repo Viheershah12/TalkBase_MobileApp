@@ -7,6 +7,7 @@ class ChatRoom {
   final String updatedBy;
   final List<String> participants;
   final Map<String, int> unreadCounts;
+  final String? groupIconUrl;
 
   ChatRoom({
     required this.id,
@@ -17,6 +18,7 @@ class ChatRoom {
     required this.updatedOn,
     required this.participants,
     this.unreadCounts = const {},
+    this.groupIconUrl,
   });
 
   factory ChatRoom.fromMap(Map<String, dynamic> map) {
@@ -29,6 +31,7 @@ class ChatRoom {
       updatedOn: map['updatedOn']?.toDate(),
       participants: List<String>.from(map['participants'] ?? []),
       unreadCounts: Map<String, int>.from(map['unreadCounts'] ?? {}),
+      groupIconUrl: map['groupIconUrl'] ?? '',
     );
   }
 
@@ -41,6 +44,7 @@ class ChatRoom {
       'updatedBy': updatedBy,
       'updatedOn': updatedOn,
       'participants': participants,
+      'groupIconUrl': groupIconUrl,
     };
   }
 }
