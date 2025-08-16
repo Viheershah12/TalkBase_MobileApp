@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:talkbase/pages/profile/profile_page.dart';
 import 'package:talkbase/pages/settings/setting_page.dart';
-
 import 'chat/chat_room_list.dart';
 import 'contacts/contact_page.dart';
 
@@ -35,21 +34,30 @@ class _HomePageState extends State<HomePage> {
         index: _selectedIndex,
         children: _screens,
       ),
+      // The BottomNavigationBar is now much cleaner!
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey[600],
         onTap: _onItemTapped,
+        // All styling is handled by the theme you defined in main.dart
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), activeIcon: Icon(Icons.chat_bubble), label: 'Chats'),
-          BottomNavigationBarItem(icon: Icon(Icons.people_outline), activeIcon: Icon(Icons.people), label: 'Contacts'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline),
+              activeIcon: Icon(Icons.chat_bubble),
+              label: 'Chats'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline),
+              activeIcon: Icon(Icons.people),
+              label: 'Contacts'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              activeIcon: Icon(Icons.settings),
+              label: 'Settings'),
         ],
-        type: BottomNavigationBarType.fixed,
       ),
     );
   }
 }
-
-

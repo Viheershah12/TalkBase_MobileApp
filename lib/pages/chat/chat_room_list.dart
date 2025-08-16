@@ -76,28 +76,27 @@ class _ChatRoomListPageState extends State<ChatRoomListPage>{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: MyAwesomeAppBar(title: "Chats", hasBackButton: false),
       body: RefreshIndicator(
         onRefresh: _handleRefresh,
         child: _buildBody(),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateChatRoomDialog(context),
-        child: Ink(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.purpleAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.all(Radius.circular(16.0)), // FAB shape
-          ),
-          child: const Center(
-            child: Icon(Icons.add_outlined, color: Colors.white),
-          ),
-        ),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () => _showCreateChatRoomDialog(context),
+      //   child: Ink(
+      //     decoration: const BoxDecoration(
+      //       gradient: LinearGradient(
+      //         colors: [Colors.deepPurple, Colors.purpleAccent],
+      //         begin: Alignment.topLeft,
+      //         end: Alignment.bottomRight,
+      //       ),
+      //       borderRadius: BorderRadius.all(Radius.circular(16.0)), // FAB shape
+      //     ),
+      //     child: const Center(
+      //       child: Icon(Icons.add_outlined, color: Colors.white),
+      //     ),
+      //   ),
+      // ),
     );
   }
 
@@ -135,16 +134,13 @@ class _ChatRoomListPageState extends State<ChatRoomListPage>{
   }
 
   Widget _buildEmptyState() {
-    // Use a ListView to ensure the RefreshIndicator still works
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
-        // Use MediaQuery to center content dynamically on any screen
         SizedBox(height: MediaQuery.of(context).size.height * 0.2),
         const Icon(
           Icons.forum_outlined,
-          size: 100,
-          color: Colors.grey,
+          size: 100
         ),
         const SizedBox(height: 20),
         const Text(
@@ -156,56 +152,67 @@ class _ChatRoomListPageState extends State<ChatRoomListPage>{
         Text(
           "Tap the '+' button below to start a new conversation.",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          // The default text style will adapt, but you can be explicit like this:
+          style: TextStyle(
+            fontSize: 16,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildShimmerEffect() {
-    return ListView.builder(
-      itemCount: 8, // Show 8 shimmer items
-      itemBuilder: (context, index) {
-        return Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: ListTile(
-            leading: const CircleAvatar(
+    // Determine colors based on the current theme's brightness
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDarkMode ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDarkMode ? Colors.grey[700]! : Colors.grey[100]!;
+    final widgetColor = isDarkMode ? Colors.grey[700]! : Colors.white;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: ListView.builder(
+        itemCount: 8,
+        itemBuilder: (context, index) {
+          return ListTile(
+            leading: CircleAvatar(
               radius: 28,
-              backgroundColor: Colors.white,
+              backgroundColor: widgetColor,
             ),
             title: Container(
               height: 16,
               width: 150,
-              color: Colors.white,
+              color: widgetColor,
             ),
             subtitle: Container(
               height: 14,
               width: 200,
-              color: Colors.white,
+              color: widgetColor,
             ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
                   height: 12,
                   width: 50,
-                  color: Colors.white,
+                  color: widgetColor,
                 ),
                 const SizedBox(height: 8),
                 Container(
                   height: 20,
                   width: 20,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: widgetColor,
                     shape: BoxShape.circle,
                   ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -322,6 +329,12 @@ class _ChatRoomListPageState extends State<ChatRoomListPage>{
                   if (name.isNotEmpty && selectedUserIds.isNotEmpty) {
                     await _createChatRoom(name, selectedUserIds);
                     Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a room name and select at least one participant.'),
+                      ),
+                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(

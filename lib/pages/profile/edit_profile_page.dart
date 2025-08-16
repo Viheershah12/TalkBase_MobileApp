@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -20,6 +21,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _homePhoneController = TextEditingController();
   final _idNumberController = TextEditingController();
   final _passportController = TextEditingController();
+  final _dobController = TextEditingController();
 
   // State variables
   String? _selectedGender;
@@ -44,6 +46,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _homePhoneController.dispose();
     _idNumberController.dispose();
     _passportController.dispose();
+    _dobController.dispose();
     super.dispose();
   }
 
@@ -68,6 +71,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _idNumberController.text = data['idNumber'] ?? '';
         _passportController.text = data['passport'] ?? '';
         _selectedGender = data['gender'];
+        _dobController.text = data['dateOfBirth'] ?? '';
       }
     } catch (e) {
       debugPrint("Error loading user data: $e");
@@ -108,7 +112,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'idNumber': _idNumberController.text.trim(),
         'passport': _passportController.text.trim(),
         'gender': _selectedGender,
-        'displayName': displayName, // Keep it consistent
+        'displayName': displayName,
+        'dateOfBirth': _dobController.text.trim()
       };
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update(userData);
@@ -126,17 +131,45 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  // Function to show the date picker
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _dobController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100], // Softer background color
       appBar: AppBar(
-        title: const Text("Edit Profile"),
+        title: const Text("Edit Profile", style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black,
         actions: [
-          // Save button in the AppBar
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _isSaving ? null : _saveProfile,
-            tooltip: "Save Changes",
+          // A cleaner save button in the AppBar
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton(
+              onPressed: _isSaving ? null : _saveProfile,
+              child: _isSaving
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+                  : const Text("Save", style: TextStyle(fontSize: 16)),
+            ),
           ),
         ],
       ),
@@ -145,76 +178,144 @@ class _EditProfilePageState extends State<EditProfilePage> {
           : Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
           children: [
-            // --- FORM FIELDS ---
-            TextFormField(
-              controller: _firstNameController,
-              decoration: const InputDecoration(labelText: "First Name", prefixIcon: Icon(Icons.person_outline)),
-              validator: (value) => value!.isEmpty ? 'Cannot be empty' : null,
+            _buildSectionHeader("Personal Information", "Update your personal details."),
+            _buildInfoCard(
+              children: [
+                _buildTextFormField(
+                  controller: _firstNameController,
+                  labelText: "First Name",
+                  icon: Icons.person_outline,
+                ),
+                const Divider(height: 1),
+                _buildTextFormField(
+                  controller: _lastNameController,
+                  labelText: "Last Name",
+                  icon: Icons.person_outline,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _lastNameController,
-              decoration: const InputDecoration(labelText: "Last Name", prefixIcon: Icon(Icons.person_outline)),
-              validator: (value) => value!.isEmpty ? 'Cannot be empty' : null,
+            const SizedBox(height: 24),
+            _buildSectionHeader("Additional Details", "Provide more information about yourself."),
+            _buildInfoCard(
+              children: [
+                _buildDropdownFormField(),
+                const Divider(height: 1),
+                _buildTextFormField(
+                  controller: _dobController,
+                  labelText: "Date of Birth",
+                  icon: Icons.calendar_today_outlined,
+                  readOnly: true,
+                  onTap: () => _selectDate(context),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            // --- GENDER DROPDOWN ---
-            DropdownButtonFormField<String>(
-              value: _selectedGender,
-              decoration: const InputDecoration(labelText: "Gender", prefixIcon: Icon(Icons.wc)),
-              items: _genders.map((gender) {
-                return DropdownMenuItem(value: gender, child: Text(gender));
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedGender = value;
-                });
-              },
+            const SizedBox(height: 24),
+
+            _buildSectionHeader("Contact & Identity", "Update your contact and identity information."),
+            _buildInfoCard(
+              children: [
+                _buildTextFormField(
+                  controller: _phoneController,
+                  labelText: "Phone Number",
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                ),
+                const Divider(height: 1),
+                _buildTextFormField(
+                  controller: _idNumberController,
+                  labelText: "ID Number",
+                  icon: Icons.badge_outlined,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _phoneController,
-              decoration: const InputDecoration(labelText: "Phone Number", prefixIcon: Icon(Icons.phone_outlined)),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _homePhoneController,
-              decoration: const InputDecoration(labelText: "Home Phone Number", prefixIcon: Icon(Icons.home_work_outlined)),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _idNumberController,
-              decoration: const InputDecoration(labelText: "ID Number", prefixIcon: Icon(Icons.badge_outlined)),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passportController,
-              decoration: const InputDecoration(labelText: "Passport Number", prefixIcon: Icon(Icons.book_outlined)),
-            ),
-            const SizedBox(height: 32),
-            // --- SAVE BUTTON ---
-            ElevatedButton.icon(
-              onPressed: _isSaving ? null : _saveProfile,
-              icon: _isSaving
-                  ? Container(
-                width: 24,
-                height: 24,
-                padding: const EdgeInsets.all(2.0),
-                child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-              )
-                  : const Icon(Icons.save),
-              label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            )
           ],
         ),
       ),
+    );
+  }
+
+  // --- WIDGET BUILDER HELPERS ---
+
+  /// A helper to build styled section headers
+  Widget _buildSectionHeader(String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0, left: 8.0, right: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A helper to create a consistent card container
+  Widget _buildInfoCard({required List<Widget> children}) {
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(children: children),
+      ),
+    );
+  }
+
+
+  /// A helper to create a styled and reusable TextFormField
+  Widget _buildTextFormField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      readOnly: readOnly,
+      onTap: onTap,
+      decoration: InputDecoration(
+        labelText: labelText,
+        prefixIcon: Icon(icon, color: Colors.grey[600]),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      ),
+      validator: (value) => value!.isEmpty ? 'This field cannot be empty' : null,
+    );
+  }
+
+  /// A specific helper for the gender dropdown for clarity
+  Widget _buildDropdownFormField() {
+    return DropdownButtonFormField<String>(
+      value: _selectedGender,
+      decoration: InputDecoration(
+        labelText: "Gender",
+        prefixIcon: Icon(Icons.wc_outlined, color: Colors.grey[600]),
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+      ),
+      items: _genders.map((gender) {
+        return DropdownMenuItem(value: gender, child: Text(gender));
+      }).toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedGender = value;
+        });
+      },
+      validator: (value) => value == null ? 'Please select a gender' : null,
     );
   }
 }
